@@ -542,7 +542,7 @@ CheckDeps()
         fi
         yum -y install glibc-locale-source glibc-langpack-en >/dev/null 2>&1 || true
         localedef -c -f UTF-8 -i en_US en_US.UTF-8 >/dev/null 2>&1 || true
-        depends=(wget unzip vim curl crond logrotate)
+        depends=(wget unzip vim curl crond logrotate patch)
         for depend in "${depends[@]}"
         do
             if [[ ! -x $(command -v "$depend") ]] 
@@ -585,7 +585,7 @@ CheckDeps()
     else
         [ "$release" == "deb" ] && FixDeprecatedDeb
         apt-get -y update >/dev/null 2>&1
-        depends=(wget unzip vim curl cron ufw python3 logrotate)
+        depends=(wget unzip vim curl cron ufw python3 logrotate patch)
         for depend in "${depends[@]}"
         do
             if [[ ! -x $(command -v "$depend") ]] 
@@ -3120,11 +3120,11 @@ FlvStreamCreator()
                         encrypt_session: $encrypt_session,
                         keyinfo_name: $keyinfo_name,
                         key_name: $key_name,
-                        key_time: now|strftime("%s")|tonumber,
+                        key_time: now|strflocaltime("%s")|tonumber,
                         input_flags: $input_flags,
                         output_flags: $output_flags,
                         channel_name: $channel_name,
-                        channel_time: now|strftime("%s")|tonumber,
+                        channel_time: now|strflocaltime("%s")|tonumber,
                         sync: $sync,
                         sync_file: $sync_file,
                         sync_index: $sync_index,
@@ -3142,7 +3142,7 @@ FlvStreamCreator()
 
                 trap '
                     JQ update "$CHANNELS_FILE" "(.channels[]|select(.pid==$pid)|.flv_status)=\"off\""
-                    printf -v date_now "%(%m-%d %H:%M:%S)T"
+                    printf -v date_now "%(%m-%d %H:%M:%S)T" -1
                     printf "%s\n" "$date_now $channel_name FLV 关闭" >> "$MONITOR_LOG"
                     chnl_pid=$pid
                     action="stop"
@@ -3292,7 +3292,7 @@ FlvStreamCreator()
 
                 trap '
                     JQ update "$CHANNELS_FILE" ".channels|=map(select(.pid==$new_pid) * { flv_status: \"off\" } // .)"
-                    printf -v date_now "%(%m-%d %H:%M:%S)T"
+                    printf -v date_now "%(%m-%d %H:%M:%S)T" -1
                     printf "%s\n" "$date_now $chnl_channel_name FLV 关闭" >> "$MONITOR_LOG"
                     chnl_pid=$new_pid
                     action="stop"
@@ -3491,11 +3491,11 @@ HlsStreamCreatorPlus()
                         encrypt_session: $encrypt_session,
                         keyinfo_name: $keyinfo_name,
                         key_name: $key_name,
-                        key_time: now|strftime("%s")|tonumber,
+                        key_time: now|strflocaltime("%s")|tonumber,
                         input_flags: $input_flags,
                         output_flags: $output_flags,
                         channel_name: $channel_name,
-                        channel_time: now|strftime("%s")|tonumber,
+                        channel_time: now|strflocaltime("%s")|tonumber,
                         sync: $sync,
                         sync_file: $sync_file,
                         sync_index: $sync_index,
@@ -3514,7 +3514,7 @@ HlsStreamCreatorPlus()
 
                 trap '
                     JQ update "$CHANNELS_FILE" "(.channels[]|select(.pid==$pid)|.status)=\"off\""
-                    printf -v date_now "%(%m-%d %H:%M:%S)T"
+                    printf -v date_now "%(%m-%d %H:%M:%S)T" -1
                     printf "%s\n" "$date_now $channel_name HLS 关闭" >> "$MONITOR_LOG"
                     chnl_pid=$pid
                     action="stop"
@@ -3947,7 +3947,7 @@ HlsStreamCreatorPlus()
 
                 trap '
                     JQ update "$CHANNELS_FILE" ".channels|=map(select(.pid==$new_pid) * { status: \"off\" } // .)"
-                    printf -v date_now "%(%m-%d %H:%M:%S)T"
+                    printf -v date_now "%(%m-%d %H:%M:%S)T" -1
                     printf "%s\n" "$date_now $chnl_channel_name HLS 关闭" >> "$MONITOR_LOG"
                     chnl_pid=$new_pid
                     action="stop"
@@ -4428,11 +4428,11 @@ HlsStreamCreator()
                         encrypt_session: $encrypt_session,
                         keyinfo_name: $keyinfo_name,
                         key_name: $key_name,
-                        key_time: now|strftime("%s")|tonumber,
+                        key_time: now|strflocaltime("%s")|tonumber,
                         input_flags: $input_flags,
                         output_flags: $output_flags,
                         channel_name: $channel_name,
-                        channel_time: now|strftime("%s")|tonumber,
+                        channel_time: now|strflocaltime("%s")|tonumber,
                         sync: $sync,
                         sync_file: $sync_file,
                         sync_index: $sync_index,
@@ -4451,7 +4451,7 @@ HlsStreamCreator()
 
                 trap '
                     JQ update "$CHANNELS_FILE" "(.channels[]|select(.pid==$pid)|.status)=\"off\""
-                    printf -v date_now "%(%m-%d %H:%M:%S)T"
+                    printf -v date_now "%(%m-%d %H:%M:%S)T" -1
                     printf "%s\n" "$date_now $channel_name HLS 关闭" >> "$MONITOR_LOG"
                     chnl_pid=$pid
                     action="stop"
@@ -4546,7 +4546,7 @@ HlsStreamCreator()
 
                 trap '
                     JQ update "$CHANNELS_FILE" ".channels|=map(select(.pid==$new_pid) * { status: \"off\" } // .)"
-                    printf -v date_now "%(%m-%d %H:%M:%S)T"
+                    printf -v date_now "%(%m-%d %H:%M:%S)T" -1
                     printf "%s\n" "$date_now $chnl_channel_name HLS 关闭" >> "$MONITOR_LOG"
                     chnl_pid=$new_pid
                     action="stop"
@@ -4747,8 +4747,8 @@ GetChannelsInfo()
     ([.channels[].video_audio_shift]|join("^")),([.channels[].txt_format]|join("^")),([.channels[].quality]|join("^")),
     ([.channels[].bitrates]|join("^")),([.channels[].const]|join("^")),([.channels[].encrypt|if .=="-e" then "yes" elif .=="" // .==null then "no" else . end]|join("^")),
     ([.channels[].encrypt_session|if .=="" // .==null then "no" else . end]|join("^")),([.channels[].keyinfo_name]|join("^")),([.channels[].key_name]|join("^")),
-    ([.channels[].key_time|if .=="" // .==null then now|strftime("%s")|tonumber else . end]|join("^")),([.channels[].input_flags]|join("^")),([.channels[].output_flags]|join("^")),
-    ([.channels[].channel_name]|join("^")),([.channels[].channel_time|if .=="" // .==null then now|strftime("%s")|tonumber else . end]|join("^")),([.channels[].sync|if .=="" // .==null then "yes" else . end]|join("^")),
+    ([.channels[].key_time|if .=="" // .==null then now|strflocaltime("%s")|tonumber else . end]|join("^")),([.channels[].input_flags]|join("^")),([.channels[].output_flags]|join("^")),
+    ([.channels[].channel_name]|join("^")),([.channels[].channel_time|if .=="" // .==null then now|strflocaltime("%s")|tonumber else . end]|join("^")),([.channels[].sync|if .=="" // .==null then "yes" else . end]|join("^")),
     ([.channels[].sync_file]|join("^")),([.channels[].sync_index]|join("^")),([.channels[].sync_pairs]|join("^")),
     ([.channels[].flv_status|if .==null then "off" else . end]|join("^")),([.channels[].flv_h265|if .==null then "no" else . end]|join("^")),([.channels[].flv_push_link]|join("^")),
     ([.channels[].flv_pull_link]|join("^"))]|@tsv' "$CHANNELS_FILE")
@@ -8613,7 +8613,7 @@ StartChannel()
     [ ! -e $FFMPEG_LOG_ROOT ] && mkdir $FFMPEG_LOG_ROOT
     from="StartChannel"
 
-    printf -v start_time '%(%s)T'
+    printf -v start_time '%(%s)T' -1
     chnl_channel_time=$start_time
 
     FilterString chnl_stream_links chnl_user_agent chnl_headers chnl_cookies \
@@ -8728,7 +8728,7 @@ StopChannel()
         then
             MonitorError "频道[ $chnl_channel_name ] 进程 $chnl_pid 不存在"
             JQ update "$CHANNELS_FILE" '(.channels[]|select(.pid=='"$chnl_pid"')|.flv_status)="off"'
-            printf -v date_now '%(%m-%d %H:%M:%S)T'
+            printf -v date_now '%(%m-%d %H:%M:%S)T' -1
             printf '%s\n' "$date_now $chnl_channel_name FLV 关闭" >> "$MONITOR_LOG"
             action="stop"
             SyncFile
@@ -8739,7 +8739,7 @@ StopChannel()
             then
                 MonitorError "频道[ $chnl_channel_name ] 进程 $chnl_pid 不存在"
                 JQ update "$CHANNELS_FILE" '(.channels[]|select(.pid=='"$chnl_pid"')|.flv_status)="off"'
-                printf -v date_now '%(%m-%d %H:%M:%S)T'
+                printf -v date_now '%(%m-%d %H:%M:%S)T' -1
                 printf '%s\n' "$date_now $chnl_channel_name FLV 关闭" >> "$MONITOR_LOG"
                 action="stop"
                 SyncFile
@@ -8751,7 +8751,7 @@ StopChannel()
         then
             MonitorError "频道[ $chnl_channel_name ] 进程 $chnl_pid 不存在"
             JQ update "$CHANNELS_FILE" '(.channels[]|select(.pid=='"$chnl_pid"')|.status)="off"'
-            printf -v date_now '%(%m-%d %H:%M:%S)T'
+            printf -v date_now '%(%m-%d %H:%M:%S)T' -1
             printf '%s\n' "$date_now $chnl_channel_name HLS 关闭" >> "$MONITOR_LOG"
             action="stop"
             SyncFile
@@ -8763,7 +8763,7 @@ StopChannel()
             then
                 MonitorError "频道[ $chnl_channel_name ] 进程 $chnl_pid 不存在"
                 JQ update "$CHANNELS_FILE" '(.channels[]|select(.pid=='"$chnl_pid"')|.status)="off"'
-                printf -v date_now '%(%m-%d %H:%M:%S)T'
+                printf -v date_now '%(%m-%d %H:%M:%S)T' -1
                 printf '%s\n' "$date_now $chnl_channel_name HLS 关闭" >> "$MONITOR_LOG"
                 action="stop"
                 SyncFile
@@ -8893,7 +8893,7 @@ Set4gtvAccEmail()
     Println "输入新账号邮箱"
     while read -p "(默认: 随机): " _4gtv_acc_email 
     do
-        [ -z "$_4gtv_acc_email" ] && _4gtv_acc_email="$(RandStr)_$(printf '%(%s)T')@gmail.com"
+        [ -z "$_4gtv_acc_email" ] && _4gtv_acc_email="$(RandStr)_$(printf '%(%s)T' -1)@gmail.com"
         if [[ $_4gtv_acc_email =~ ^[A-Za-z0-9]([a-zA-Z0-9_\.\-]*)@([A-Za-z0-9]+)([a-zA-Z0-9\.\-]*)\.([A-Za-z]{2,})$ ]] 
         then
             break
@@ -9314,7 +9314,7 @@ Get4gtvAccToken()
 
 _4gtvCron()
 {
-    _4gtv_acc_email="$(RandStr)_$(printf '%(%s)T')@gmail.com"
+    _4gtv_acc_email="$(RandStr)_$(printf '%(%s)T' -1)@gmail.com"
     _4gtv_acc_pass=$(RandStr)
     IFS=" " read -r result msg < <(curl -s -Lm 10 'https://api2.4gtv.tv/Account/Register' \
         -H "User-Agent: $user_agent" \
@@ -9914,7 +9914,7 @@ ScheduleNiotv()
         printf '{"%s":[]}' "msxw" > "$SCHEDULE_JSON"
     fi
 
-    printf -v today '%(%Y-%m-%d)T'
+    printf -v today '%(%Y-%m-%d)T' -1
     SCHEDULE_LINK_NIOTV="http://www.niotv.com/i_index.php?cont=day"
 
     for chnl in "${niotv_chnls[@]}"
@@ -9992,7 +9992,7 @@ ScheduleJiushi()
         chnl_name=${chnl_name// /-}
         chnl_name_encode=$(UrlencodeUpper "$chnl_name")
 
-        printf -v today '%(%Y-%m-%d)T'
+        printf -v today '%(%Y-%m-%d)T' -1
 
         SCHEDULE_LINK="https://xn--i0yt6h0rn.tw/channel/$chnl_name_encode/index.json"
 
@@ -10042,7 +10042,7 @@ ScheduleJiushi()
 
 ScheduleHbozw()
 {
-    printf -v today '%(%Y-%m-%d)T'
+    printf -v today '%(%Y-%m-%d)T' -1
 
     if [ ! -s "$SCHEDULE_JSON" ] 
     then
@@ -10107,7 +10107,7 @@ ScheduleHbozw()
 
 ScheduleHbous()
 {
-    printf -v today '%(%Y-%m-%d)T'
+    printf -v today '%(%Y-%m-%d)T' -1
     sys_time=$(date -d $today +%s)
     min_sys_time=$((sys_time-7200))
     max_sys_time=$((sys_time+86400))
@@ -10189,7 +10189,7 @@ ScheduleHbous()
 
 ScheduleOntvtonight()
 {
-    printf -v today '%(%Y-%m-%d)T'
+    printf -v today '%(%Y-%m-%d)T' -1
     sys_time=$(date -d $today +%s)
     min_sys_time=$((sys_time-7200))
     max_sys_time=$((sys_time+86400))
@@ -10313,7 +10313,7 @@ ScheduleOntvtonight()
 
 ScheduleDisneyjr()
 {
-    printf -v today '%(%Y%m%d)T'
+    printf -v today '%(%Y%m%d)T' -1
     SCHEDULE_LINK="https://disney.com.tw/_schedule/full/$today/8/%2Fepg"
 
     if [ ! -s "$SCHEDULE_JSON" ] 
@@ -10351,7 +10351,7 @@ ScheduleDisneyjr()
 
 ScheduleFoxmovies()
 {
-    printf -v today '%(%Y-%-m-%-d)T'
+    printf -v today '%(%Y-%-m-%-d)T' -1
     SCHEDULE_LINK="https://www.fng.tw/foxmovies/program.php?go=$today"
 
     if [ ! -s "$SCHEDULE_JSON" ] 
@@ -10397,7 +10397,7 @@ ScheduleFoxmovies()
 
 ScheduleAmlh()
 {
-    printf -v today '%(%Y-%-m-%-d)T'
+    printf -v today '%(%Y-%-m-%-d)T' -1
     timestamp=$(date -d $today +%s)
 
     TODAY_SCHEDULE_LINK="http://wap.lotustv.cc/wap.php/Sub/program/d/$timestamp"
@@ -10509,7 +10509,7 @@ ScheduleAmlh()
 
 ScheduleTvbhk()
 {
-    printf -v today '%(%Y-%m-%d)T'
+    printf -v today '%(%Y-%m-%d)T' -1
     sys_time=$(date -d $today +%s)
     max_sys_time=$((sys_time+86400))
     yesterday=$(printf '%(%Y-%m-%d)T' $((sys_time - 86400)))
@@ -10632,7 +10632,7 @@ ScheduleTvbhd()
     cd "$IPTV_ROOT"
     pdf2htmlEX --zoom 1.3 "./tvb_hd.pdf"
 
-    printf -v today '%(%Y-%m-%d)T'
+    printf -v today '%(%Y-%m-%d)T' -1
     sys_time=$(date -d $today +%s)
     yesterday=$(printf '%(%Y-%m-%d)T' $((sys_time - 86400)))
 
@@ -10945,7 +10945,7 @@ ScheduleTvbhd()
             break
         fi
     done < "./tvb_hd.html"
-    weekday=$(printf '%(%u)T')
+    weekday=$(printf '%(%u)T' -1)
     if [ "$weekday" -eq 1 ] 
     then
         p_title=("${sunday_program_title[@]}")
@@ -11027,7 +11027,7 @@ ScheduleTvbhd()
 
 ScheduleSingteltv()
 {
-    printf -v today '%(%Y%m%d)T'
+    printf -v today '%(%Y%m%d)T' -1
 
     if [ ! -s "$SCHEDULE_JSON" ] 
     then
@@ -11075,7 +11075,7 @@ ScheduleSingteltv()
 
 ScheduleCntv()
 {
-    printf -v today '%(%Y%m%d)T'
+    printf -v today '%(%Y%m%d)T' -1
 
     if [ ! -s "$SCHEDULE_JSON" ] 
     then
@@ -11112,7 +11112,7 @@ ScheduleCntv()
 
 ScheduleTvbs()
 {
-    printf -v today '%(%Y-%m-%d)T'
+    printf -v today '%(%Y-%m-%d)T' -1
 
     if [ ! -s "$SCHEDULE_JSON" ] 
     then
@@ -11155,7 +11155,7 @@ ScheduleTvbs()
 
 ScheduleAstro()
 {
-    printf -v today '%(%Y-%m-%d)T'
+    printf -v today '%(%Y-%m-%d)T' -1
 
     if [ ! -s "$SCHEDULE_JSON" ] 
     then
@@ -11198,7 +11198,7 @@ ScheduleAstro()
 
 Schedule_4gtv()
 {
-    printf -v today '%(%Y-%m-%d)T'
+    printf -v today '%(%Y-%m-%d)T' -1
 
     if [ ! -s "$SCHEDULE_JSON" ] 
     then
@@ -11664,7 +11664,7 @@ ScheduleBackup()
     $JQ_FILE -n --arg name "$backup_name" --argjson schedule "[$backup_schedule]" \
         '{
             name: $name,
-            date: now|strftime("%s")|tonumber,
+            date: now|strflocaltime("%s")|tonumber,
             schedule: $schedule
         }'
     )
@@ -12902,13 +12902,17 @@ InstallImgcat()
 
     cd ~
 
-    if [ ! -e "./imgcat-master" ] 
+    if [ ! -d ./imgcat-master ] 
     then
-        wget --timeout=10 --tries=3 --no-check-certificate "$FFMPEG_MIRROR_LINK/imgcat.zip" -qO "imgcat.zip"
-        unzip "imgcat.zip" >/dev/null 2>&1
+        wget --timeout=10 --tries=3 --no-check-certificate "$FFMPEG_MIRROR_LINK/imgcat.zip" -qO imgcat.zip
+        unzip imgcat.zip >/dev/null 2>&1
     fi
 
-    cd "./imgcat-master"
+    cd ./imgcat-master
+    rm -rf CImg
+    wget --timeout=10 --tries=3 --no-check-certificate "$FFMPEG_MIRROR_LINK/CImg.zip" -qO CImg.zip
+    unzip CImg.zip >/dev/null 2>&1
+    mv CImg-master CImg
     autoconf >/dev/null 2>&1
     ./configure >/dev/null 2>&1
     make >/dev/null 2>&1
@@ -12981,7 +12985,7 @@ TsRegister()
                         devicetype="yuj"
                         md5_password=$(printf '%s' "$password" | md5sum)
                         md5_password=${md5_password%% *}
-                        printf -v timestamp '%(%s)T'
+                        printf -v timestamp '%(%s)T' -1
                         timestamp=$((timestamp * 1000))
                         signature="$account|$md5_password|$deviceno|$devicetype|$timestamp"
                         signature=$(printf '%s' "$signature" | md5sum)
@@ -13077,7 +13081,7 @@ TsLogin()
         TOKEN_LINK="${ts_array[login_url]}?deviceno=$deviceno&devicetype=3&accounttype=${ts_array[acc_type_login]:-2}&accesstoken=(null)&account=$account&pwd=$md5_password&isforce=1&businessplatform=1"
         token=$(curl -s -Lm 10 -H "User-Agent: $user_agent" "$TOKEN_LINK")
     else
-        printf -v timestamp '%(%s)T'
+        printf -v timestamp '%(%s)T' -1
         timestamp=$((timestamp * 1000))
         signature="$deviceno|yuj|${ts_array[acc_type_login]}|$account|$timestamp"
         signature=$(printf '%s' "$signature" | md5sum)
@@ -13328,7 +13332,7 @@ AntiLeech()
             inquirer list_input "是否下个小时开始随机重启" yn_options anti_leech_restart_next_hour_yn
             if [[ $anti_leech_restart_next_hour_yn == "是" ]] 
             then
-                printf -v current_hour '%(%-H)T'
+                printf -v current_hour '%(%-H)T' -1
                 skip_hour=$current_hour
                 minutes=()
             fi
@@ -13717,7 +13721,7 @@ AntiDDoS()
                 then
                     new_ips=()
                     new_jail_time=()
-                    printf -v now '%(%s)T'
+                    printf -v now '%(%s)T' -1
 
                     update=0
                     for((i=0;i<${#ips[@]};i++));
@@ -13768,7 +13772,7 @@ AntiDDoS()
                     sleep "$anti_ddos_syn_flood_delay_seconds" &
                     WaitTerm
 
-                    printf -v now '%(%s)T'
+                    printf -v now '%(%s)T' -1
                     jail=$((now + anti_ddos_syn_flood_seconds))
 
                     while IFS= read -r anti_ddos_syn_flood_ip 
@@ -13793,7 +13797,7 @@ AntiDDoS()
                                     jail_time+=("$jail")
                                     printf '%s\n' "$ip:$jail" >> "$IP_DENY"
                                     ufw insert 1 deny from "$ip" to any port $anti_ddos_port > /dev/null 2>> "$IP_LOG"
-                                    printf -v date_now '%(%m-%d %H:%M:%S)T'
+                                    printf -v date_now '%(%m-%d %H:%M:%S)T' -1
                                     printf '%s\n' "$date_now $ip 已被禁" >> "$IP_LOG"
                                     ips+=("$ip")
                                     break 1
@@ -13846,7 +13850,7 @@ AntiDDoS()
                         done
                     done
 
-                    printf -v now '%(%s)T'
+                    printf -v now '%(%s)T' -1
                     jail=$((now + anti_ddos_seconds))
 
                     while IFS=' ' read -r counts ip access_file
@@ -13887,7 +13891,7 @@ AntiDDoS()
                                         jail_time+=("$jail")
                                         printf '%s\n' "$ip:$jail" >> "$IP_DENY"
                                         ufw insert 1 deny from "$ip" to any port $anti_ddos_port > /dev/null 2>> "$IP_LOG"
-                                        printf -v date_now '%(%m-%d %H:%M:%S)T'
+                                        printf -v date_now '%(%m-%d %H:%M:%S)T' -1
                                         printf '%s\n' "$date_now $ip 已被禁" >> "$IP_LOG"
                                         ips+=("$ip")
                                         break 1
@@ -13908,7 +13912,7 @@ AntiDDoS()
                 then
                     new_ips=()
                     new_jail_time=()
-                    printf -v now '%(%s)T'
+                    printf -v now '%(%s)T' -1
 
                     update=0
                     for((i=0;i<${#ips[@]};i++));
@@ -13961,14 +13965,14 @@ MonitorHlsRestartSuccess()
         hls_recheck_time=("${new_array[@]}")
         unset new_array
     fi
-    printf -v date_now '%(%m-%d %H:%M:%S)T'
+    printf -v date_now '%(%m-%d %H:%M:%S)T' -1
     printf '%s\n' "$date_now $chnl_channel_name 重启成功" >> "$MONITOR_LOG"
 }
 
 MonitorHlsRestartFail()
 {
     StopChannel
-    printf -v now '%(%s)T'
+    printf -v now '%(%s)T' -1
     recheck_time=$((now+recheck_period))
 
     if [ -n "${failed_restart_nums:-}" ] 
@@ -13987,7 +13991,7 @@ MonitorHlsRestartFail()
     monitor_dir_names_chosen=("${new_array[@]}")
     unset new_array
 
-    printf -v date_now '%(%m-%d %H:%M:%S)T'
+    printf -v date_now '%(%m-%d %H:%M:%S)T' -1
     printf '%s\n' "$date_now $chnl_channel_name 重启失败" >> "$MONITOR_LOG"
 }
 
@@ -14504,14 +14508,14 @@ MonitorFlvRestartSuccess()
         flv_recheck_time=("${new_array[@]}")
         unset new_array
     fi
-    printf -v date_now '%(%m-%d %H:%M:%S)T'
+    printf -v date_now '%(%m-%d %H:%M:%S)T' -1
     printf '%s\n' "$date_now $chnl_channel_name 重启成功" >> "$MONITOR_LOG"
 }
 
 MonitorFlvRestartFail()
 {
     StopChannel
-    printf -v now '%(%s)T'
+    printf -v now '%(%s)T' -1
     recheck_time=$((now+recheck_period))
 
     if [ -n "${failed_restart_nums:-}" ] 
@@ -14530,7 +14534,7 @@ MonitorFlvRestartFail()
     flv_nums_arr=("${new_array[@]}")
     unset new_array
 
-    printf -v date_now '%(%m-%d %H:%M:%S)T'
+    printf -v date_now '%(%m-%d %H:%M:%S)T' -1
     printf '%s\n' "$date_now $chnl_channel_name FLV 重启超过${flv_restart_nums:-20}次关闭" >> "$MONITOR_LOG"
 }
 
@@ -15228,7 +15232,7 @@ MonitorTryAccounts()
                             if [ "$audio" -eq 1 ] && [ "$video" -eq 1 ]
                             then
                                 try_success=1
-                                printf -v date_now '%(%m-%d %H:%M:%S)T'
+                                printf -v date_now '%(%m-%d %H:%M:%S)T' -1
                                 printf '%s\n' "$date_now $chnl_channel_name 重启成功" >> "$MONITOR_LOG"
                                 break
                             fi
@@ -15298,7 +15302,7 @@ MonitorTryAccounts()
                                 if [ "$audio" -eq 1 ] && [ "$video" -eq 1 ] && [[ $video_bitrate -ge $hls_min_bitrates ]]
                                 then
                                     try_success=1
-                                    printf -v date_now '%(%m-%d %H:%M:%S)T'
+                                    printf -v date_now '%(%m-%d %H:%M:%S)T' -1
                                     printf '%s\n' "$date_now $chnl_channel_name 重启成功" >> "$MONITOR_LOG"
                                     break
                                 fi
@@ -15435,7 +15439,7 @@ MonitorTryAccounts()
                     if [ "$audio" -eq 1 ] && [ "$video" -eq 1 ]
                     then
                         try_success=1
-                        printf -v date_now '%(%m-%d %H:%M:%S)T'
+                        printf -v date_now '%(%m-%d %H:%M:%S)T' -1
                         printf '%s\n' "$date_now $chnl_channel_name 重启成功" >> "$MONITOR_LOG"
                         break
                     fi
@@ -15505,7 +15509,7 @@ MonitorTryAccounts()
                         if [ "$audio" -eq 1 ] && [ "$video" -eq 1 ] && [[ $video_bitrate -ge $hls_min_bitrates ]]
                         then
                             try_success=1
-                            printf -v date_now '%(%m-%d %H:%M:%S)T'
+                            printf -v date_now '%(%m-%d %H:%M:%S)T' -1
                             printf '%s\n' "$date_now $chnl_channel_name 重启成功" >> "$MONITOR_LOG"
                             break
                         fi
@@ -15931,7 +15935,7 @@ Monitor()
             hls_recheck_time=()
             while true
             do
-                printf -v now '%(%s)T'
+                printf -v now '%(%s)T' -1
                 if [ "$recheck_period" -gt 0 ] 
                 then
                     if [ -n "${flv_recheck_time:-}" ] 
@@ -15977,7 +15981,7 @@ Monitor()
                 then
                     current_minute_old=${current_minute:-}
                     current_hour_old=${current_hour:-25}
-                    printf -v current_time '%(%H:%M)T'
+                    printf -v current_time '%(%H:%M)T' -1
                     current_hour=${current_time%:*}
                     current_minute=${current_time#*:}
 
@@ -16012,7 +16016,12 @@ Monitor()
                                 rand_restart_hls_done=0
                             fi
                         done
-                        minutes=("${new_array[@]}")
+                        if [ -z "${new_array:-}" ] 
+                        then
+                            minutes=()
+                        else
+                            minutes=("${new_array[@]}")
+                        fi
                         unset new_array
                         [ -z "${minutes:-}" ] && skip_hour=$current_hour
                     fi
@@ -16097,22 +16106,22 @@ Monitor()
                             GetChannelInfo
                             if [ -n "${flv_first_fail:-}" ] 
                             then
-                                printf -v flv_fail_time '%(%s)T'
+                                printf -v flv_fail_time '%(%s)T' -1
                                 if [ $((flv_fail_time - flv_first_fail)) -gt "$flv_delay_seconds" ] 
                                 then
                                     flv_first_fail=""
-                                    printf -v date_now '%(%m-%d %H:%M:%S)T'
+                                    printf -v date_now '%(%m-%d %H:%M:%S)T' -1
                                     printf '%s\n' "$date_now $chnl_channel_name FLV 超时重启" >> "$MONITOR_LOG"
                                     MonitorFlvRestartChannel
                                 fi
                             else
                                 if [ "$chnl_flv_status" == "off" ] 
                                 then
-                                    printf -v date_now '%(%m-%d %H:%M:%S)T'
+                                    printf -v date_now '%(%m-%d %H:%M:%S)T' -1
                                     printf '%s\n' "$date_now $chnl_channel_name FLV 恢复启动" >> "$MONITOR_LOG"
                                     MonitorFlvRestartChannel
                                 else
-                                    printf -v flv_first_fail '%(%s)T'
+                                    printf -v flv_first_fail '%(%s)T' -1
                                 fi
 
                                 new_array=("$flv_num")
@@ -16130,7 +16139,7 @@ Monitor()
                             if [ -n "${rand_restart_flv_done:-}" ] && [ "$rand_restart_flv_done" -eq 0 ]
                             then
                                 rand_found=1
-                                printf -v date_now '%(%m-%d %H:%M:%S)T'
+                                printf -v date_now '%(%m-%d %H:%M:%S)T' -1
                                 printf '%s\n' "$date_now $chnl_channel_name FLV 随机重启" >> "$MONITOR_LOG"
                                 MonitorFlvRestartChannel
                             fi
@@ -16262,9 +16271,15 @@ Monitor()
                                     then
                                         if [ "${chnls_encrypt_session[monitor_i]}" == "yes" ] 
                                         then
-                                            echo -e "/keys?key=$new_key_name&channel=$output_dir_name\n$LIVE_ROOT/$output_dir_name/$new_key_name.key\n$(openssl rand -hex 16)" > "$LIVE_ROOT/$output_dir_name/${chnls_keyinfo_name[monitor_i]}.keyinfo"
+                                            if ! echo -e "/keys?key=$new_key_name&channel=$output_dir_name\n$LIVE_ROOT/$output_dir_name/$new_key_name.key\n$(openssl rand -hex 16)" > "$LIVE_ROOT/$output_dir_name/${chnls_keyinfo_name[monitor_i]}.keyinfo"
+                                            then
+                                                break 2
+                                            fi
                                         else
-                                            echo -e "$new_key_name.key\n$LIVE_ROOT/$output_dir_name/$new_key_name.key\n$(openssl rand -hex 16)" > "$LIVE_ROOT/$output_dir_name/${chnls_keyinfo_name[monitor_i]}.keyinfo"
+                                            if ! echo -e "$new_key_name.key\n$LIVE_ROOT/$output_dir_name/$new_key_name.key\n$(openssl rand -hex 16)" > "$LIVE_ROOT/$output_dir_name/${chnls_keyinfo_name[monitor_i]}.keyinfo"
+                                            then
+                                                break 2
+                                            fi
                                         fi
                                         JQ update "$CHANNELS_FILE" '.channels|=map(select(.pid=='"${chnls_pid[monitor_i]}"') * 
                                         {
@@ -16428,7 +16443,7 @@ Monitor()
 
 MonitorStop()
 {
-    printf -v date_now '%(%m-%d %H:%M:%S)T'
+    printf -v date_now '%(%m-%d %H:%M:%S)T' -1
 
     # deprecated
     if ls -A "/tmp/monitor.lockdir/"* > /dev/null 2>&1
@@ -16536,7 +16551,7 @@ MonitorStop()
         then
             new_ips=()
             new_jail_time=()
-            printf -v now '%(%s)T'
+            printf -v now '%(%s)T' -1
 
             update=0
             for((i=0;i<${#ips[@]};i++));
@@ -16571,7 +16586,7 @@ MonitorStop()
 
 MonitorError()
 {
-    printf -v date_now '%(%m-%d %H:%M:%S)T'
+    printf -v date_now '%(%m-%d %H:%M:%S)T' -1
     printf '%s\n' "$date_now [ERROR: $1]" >> "$MONITOR_LOG"
 }
 
@@ -19431,6 +19446,7 @@ NginxDomainServerToggleNodejs()
             proxy_set_header X-Forwarded-Proto $scheme;
 
             proxy_cache_bypass 1;
+            proxy_no_cache 1;
         }
 
         location = /channels.json {
@@ -19469,6 +19485,7 @@ NginxDomainServerToggleNodejs()
             proxy_set_header X-Forwarded-Proto $scheme;
 
             proxy_cache_bypass 1;
+            proxy_no_cache 1;
         }
 
         location ~ \.(keyinfo|key)$ {
@@ -19568,6 +19585,7 @@ NginxDomainServerToggleNodejs()
             proxy_set_header X-Forwarded-Proto $scheme;
 
             proxy_cache_bypass 1;
+            proxy_no_cache 1;
         }
 
         location = /channels.json {
@@ -19606,6 +19624,7 @@ NginxDomainServerToggleNodejs()
             proxy_set_header X-Forwarded-Proto $scheme;
 
             proxy_cache_bypass 1;
+            proxy_no_cache 1;
         }
 
         location ~ \.(keyinfo|key)$ {
@@ -19657,7 +19676,7 @@ NginxDomainUpdateCrt()
     ~/.acme.sh/acme.sh --force --installcert -d "${nginx_domains[nginx_domains_index]}" --fullchainpath $nginx_prefix/conf/sites_crt/"${nginx_domains[nginx_domains_index]}".crt --keypath $nginx_prefix/conf/sites_crt/"${nginx_domains[nginx_domains_index]}".key --ecc > /dev/null
 
     $NGINX_FILE
-    Println "$info 证书更新完成..."
+    Println "$info 证书更新完成...\n"
 }
 
 NginxEditDomain()
@@ -20108,6 +20127,7 @@ NginxConfigLocalhost()
             proxy_set_header X-Forwarded-Proto http;
 
             proxy_cache_bypass 1;
+            proxy_no_cache 1;
         }
 
         location = /channels.json {
@@ -20146,6 +20166,7 @@ NginxConfigLocalhost()
             proxy_set_header X-Forwarded-Proto http;
 
             proxy_cache_bypass 1;
+            proxy_no_cache 1;
         }
 
         location ~ \.(keyinfo|key)$ {
@@ -21019,7 +21040,7 @@ V2rayUpdate()
 
 V2rayConfigInstall()
 {
-    printf -v update_date '%(%m-%d)T'
+    printf -v update_date '%(%m-%d)T' -1
     cp -f "$V2_CONFIG" "${V2_CONFIG}_$update_date"
     while IFS= read -r line 
     do
@@ -23203,7 +23224,7 @@ V2rayDomainUpdateCrt()
     ~/.acme.sh/acme.sh --force --installcert -d "${v2ray_domains[v2ray_domains_index]}" --fullchainpath $nginx_prefix/conf/sites_crt/"${v2ray_domains[v2ray_domains_index]}".crt --keypath $nginx_prefix/conf/sites_crt/"${v2ray_domains[v2ray_domains_index]}".key --ecc > /dev/null
 
     $NGINX_FILE
-    Println "$info 证书更新完成..."
+    Println "$info 证书更新完成...\n"
 }
 
 V2rayAppendDomainConf()
@@ -23693,7 +23714,7 @@ SetCloudflareUserEmail()
     Println "请输入用户邮箱"
     while read -p "(默认: 随机): " cf_user_email 
     do
-        [ -z "$cf_user_email" ] && cf_user_email="$(RandStr)_$(printf '%(%s)T')@gmail.com"
+        [ -z "$cf_user_email" ] && cf_user_email="$(RandStr)_$(printf '%(%s)T' -1)@gmail.com"
         if [[ $cf_user_email =~ ^[A-Za-z0-9]([a-zA-Z0-9_\.\-]*)@([A-Za-z0-9]+)([a-zA-Z0-9\.\-]*)\.([A-Za-z]{2,})$ ]] 
         then
             break
@@ -25468,7 +25489,7 @@ SetCloudflareWorkerProjectName()
     do
         case $cf_worker_project_name in
             "") 
-                printf -v cf_worker_project_name '%(%s)T'
+                printf -v cf_worker_project_name '%(%s)T' -1
                 cf_worker_project_name="$(RandStr)_$cf_worker_project_name"
                 break
             ;;
@@ -26733,7 +26754,7 @@ MonitorCloudflareWorkers()
     {
         flock -x 204
         {
-            printf -v date_now '%(%m-%d %H:%M:%S)T'
+            printf -v date_now '%(%m-%d %H:%M:%S)T' -1
             printf '%s\n' "$date_now 启动 workers 监控  PID $BASHPID !" >> "$MONITOR_LOG"
 
             clear=$(date --utc -d 'tomorrow 00:00:00' +%s)
@@ -26747,7 +26768,7 @@ MonitorCloudflareWorkers()
 
             while true 
             do
-                printf -v now '%(%s)T'
+                printf -v now '%(%s)T' -1
                 if [ "$now" -ge "$clear" ] 
                 then
                     clear=$(date --utc -d 'tomorrow 00:00:00' +%s)
@@ -27517,7 +27538,7 @@ DisableCloudflareWorkersMonitor()
         if kill -0 "$cf_workers_pid" 2> /dev/null
         then
             kill "$cf_workers_pid" 2> /dev/null
-            printf -v date_now '%(%m-%d %H:%M:%S)T'
+            printf -v date_now '%(%m-%d %H:%M:%S)T' -1
             [ ! -d "${MONITOR_LOG%/*}" ] && MONITOR_LOG="$HOME/monitor.log"
             printf '%s\n' "$date_now 关闭 workers 监控 PID $cf_workers_pid !" >> "$MONITOR_LOG"
             Println "$info workers 监控 关闭成功\n"
@@ -27533,7 +27554,7 @@ DisableCloudflareWorkersMonitor()
             kill "$PID" 2> /dev/null
             if flock -E 1 -w 20 -x "$CF_WORKERS_ROOT/cf_workers.pid" rm -f "$CF_WORKERS_ROOT/cf_workers.pid"
             then
-                printf -v date_now '%(%m-%d %H:%M:%S)T'
+                printf -v date_now '%(%m-%d %H:%M:%S)T' -1
                 printf '%s\n' "$date_now 关闭 workers 监控 PID $PID !" >> "$MONITOR_LOG"
                 Println "$info workers 监控 关闭成功 !\n"
             else
@@ -30176,7 +30197,7 @@ SetVipUserSum()
             1) 
                 vip_user_expire_days=1
                 vip_user_sum="ssum"
-                printf -v now '%(%s)T' 
+                printf -v now '%(%s)T' -1
                 vip_user_expire=$((now+86400))
                 break
             ;;
@@ -30188,7 +30209,7 @@ SetVipUserSum()
                     case $vip_user_expire_days in
                         ""|1) 
                             vip_user_expire_days=1
-                            printf -v now '%(%s)T' 
+                            printf -v now '%(%s)T' -1
                             vip_user_expire=$((now+86400))
                             break 2
                         ;;
@@ -30198,7 +30219,7 @@ SetVipUserSum()
                         *) 
                             if [[ $vip_user_expire_days -gt 1 ]]
                             then
-                                printf -v now '%(%s)T' 
+                                printf -v now '%(%s)T' -1
                                 vip_user_expire=$((now+86400*vip_user_expire_days))
                                 break 2
                             else
@@ -30733,7 +30754,7 @@ GetVipStreamLink()
         day=$((vip_user_expire/86400))
         st2=$vip_user_expire
     else
-        printf -v now '%(%s)T'
+        printf -v now '%(%s)T' -1
         st2=$((now+86400*720))
     fi
 
@@ -31033,9 +31054,9 @@ MonitorVip()
     {
         flock -x 205
         {
-            printf -v date_now '%(%m-%d %H:%M:%S)T'
+            printf -v date_now '%(%m-%d %H:%M:%S)T' -1
             printf '%s\n' "$date_now 启动 VIP  PID $BASHPID !" >> "$MONITOR_LOG"
-            printf -v now '%(%s)T'
+            printf -v now '%(%s)T' -1
             never=$((now+86400*720))
 
             GetSchedules
@@ -31258,7 +31279,7 @@ MonitorVip()
                         done
                     fi
                 done
-                printf -v now '%(%s)T'
+                printf -v now '%(%s)T' -1
             done
         } 205>&-
     } 205<"$pid_file"
@@ -31335,7 +31356,7 @@ DisableVip()
         if kill -0 "$vip_pid" 2> /dev/null
         then
             kill "$vip_pid" 2> /dev/null
-            printf -v date_now '%(%m-%d %H:%M:%S)T'
+            printf -v date_now '%(%m-%d %H:%M:%S)T' -1
             printf '%s\n' "$date_now 关闭 VIP  PID $vip_pid !" >> "$MONITOR_LOG"
             Println "$info VIP 关闭成功\n"
         else
@@ -31351,7 +31372,7 @@ DisableVip()
             kill "$PID" 2> /dev/null
             if flock -E 1 -w 20 -x "$IPTV_ROOT/vip.pid" rm -f "$IPTV_ROOT/vip.pid"
             then
-                printf -v date_now '%(%m-%d %H:%M:%S)T'
+                printf -v date_now '%(%m-%d %H:%M:%S)T' -1
                 printf '%s\n' "$date_now 关闭 VIP PID $PID !" >> "$MONITOR_LOG"
                 Println "$info VIP 关闭成功 !\n"
             else
@@ -31375,7 +31396,7 @@ ViewVipUserChannel()
         Println "$error 请先输入授权码, 加微信 woniuzfb 或 tg @ woniuzfb\n"
     else
         GetVipUsers
-        printf -v now '%(%s)T'
+        printf -v now '%(%s)T' -1
         vip_users_list=""
         for((i=0;i<vip_users_count;i++));
         do
@@ -31659,7 +31680,7 @@ UpdateSelf()
         fi
 
         Println "$info 更新中, 请稍等...\n"
-        printf -v update_date '%(%m-%d)T'
+        printf -v update_date '%(%m-%d)T' -1
         cp -f "$CHANNELS_FILE" "${CHANNELS_FILE}_$update_date"
 
         GetChannelsInfo
@@ -33603,7 +33624,7 @@ then
                         count=0
                         log=""
                         last_line=""
-                        printf -v this_hour '%(%H)T'
+                        printf -v this_hour '%(%H)T' -1
                         while IFS= read -r line 
                         do
                             if [ "$count" -lt "${3:-10}" ] 
@@ -33684,7 +33705,7 @@ then
                             fi
                         fi
                         NGINX_FILE="$nginx_prefix/sbin/nginx"
-                        printf -v date_now '%(%m-%d %H:%M:%S)T'
+                        printf -v date_now '%(%m-%d %H:%M:%S)T' -1
                         MonitorSet
 
                         if [ "$sh_debug" -eq 1 ] 
@@ -33974,6 +33995,14 @@ case "$cmd" in
             mv "$FFMPEG_MIRROR_ROOT/imgcat.zip_tmp" "$FFMPEG_MIRROR_ROOT/imgcat.zip"
         else
             Println "$error imgcat 下载出错, 无法连接 github ?"
+        fi
+
+        Println "$info 下载 CImg ..."
+        if curl -s -L "https://github.com/dtschump/CImg/archive/master.zip" -o "$FFMPEG_MIRROR_ROOT/CImg.zip_tmp"
+        then
+            mv "$FFMPEG_MIRROR_ROOT/CImg.zip_tmp" "$FFMPEG_MIRROR_ROOT/CImg.zip"
+        else
+            Println "$error CImg 下载出错, 无法连接 github ?"
         fi
 
         if curl -s -L "https://api.github.com/repos/stedolan/jq/releases/latest" -o "$FFMPEG_MIRROR_ROOT/jq.json_tmp"
